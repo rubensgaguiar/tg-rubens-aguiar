@@ -47,6 +47,27 @@ else:
 model = CapellaModel()
 model.open(aird_path)
 
+class StateMachineSimulator:
+    def __init__(self):
+        pass
+
+    def state_machine_to_yaml(self):
+        pass
+
+    def run_simulation(self):
+        state_machine_yaml = self.state_machine_to_yaml()
+        for step in steps:
+            pass
+
+'''
+# Planejamento da classe
+- métodos
+  - state_machine_to_yaml
+  - run_simulation
+      - método privado: 
+      - 
+'''
+
 # gets the SystemEngineering
 se = model.get_system_engineering()
 logical_architecture = se.get_logical_architecture()
