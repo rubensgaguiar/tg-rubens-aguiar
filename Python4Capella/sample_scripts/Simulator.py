@@ -107,6 +107,7 @@ class Factory(ABC):
   def __new__(cls):
     return cls.products[cls.type]
 
+
 class ParserFactory:
   """
     Fábrica de Parser
