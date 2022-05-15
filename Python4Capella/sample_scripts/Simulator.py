@@ -3,6 +3,9 @@ from typing_extensions import Self
 
 
 class Parser(ABC):
+  """
+    Abstração de um parser
+  """
   def session(self):
     # abstract
     pass
@@ -13,12 +16,19 @@ class Parser(ABC):
 
 
 class SM(ABC):
+  """
+    Abstração de uma máquina de estados
+  """
   def build_states(self):
     # abstract
     pass
 
 
 class SismicParser(Parser):
+  """
+    Traduz sessões do capella para o modelo
+    Traduz estados do modelo para o capella
+  """
   def session(self, session=None):
     logical_architecture = session.get_logical_architecture()
     logical_system = logical_architecture.get_logical_system()
@@ -87,6 +97,9 @@ class SismicSM(SM):
 
 
 class Factory(ABC):
+  """
+    Abstração da fabricação de modelos
+  """
   def __init__(self, type, products):
     self.type = type
     self.products = products
@@ -95,44 +108,61 @@ class Factory(ABC):
     return cls.products[cls.type]
 
 class ParserFactory:
+  """
+    Fábrica de Parser
+  """
   def __init__(self, type) -> None:
+    # Possíveis modelos de parser
     products = {
       'sismic': SismicParser
     }
     super().__init__(type, products)
 
   def __new__(cls: type[Self]) -> Self:
-      return super().__new__()
+    # Fabrica o modelo solicitado
+    return super().__new__()
 
 
 class SMFactory:
+  """
+    Fábrica de Máquina de Estados
+  """
   def __init__(self, type) -> None:
+    # Possíveis modelos de parser
     products = {
       'sismic': SismicSM
     }
     super().__init__(type, products)
 
   def __new__(cls: type[Self]) -> Self:
-      return super().__new__()
+    # Fabrica o modelo solicitado
+    return super().__new__()
 
 
 class StateMachineModel:
+  """
+    Construção de um modelo de máquina de estados
+  """
   def __init__(self, session, sm_type, parser_type):
+    # Inicializa a máquina de estados, parser e sessão
     self.sm = SMFactory(sm_type=sm_type)
     self.parser = ParserFactory(parser_type=parser_type)
     self.session = self.parser.session(session=session)
 
   def build_states(self):
+    # Chama método de construção de estados
     states = self.sm.build_states(session=self.session)
+
+    # Traduz os estados para a linguagem do capella
     return [self.parser.state(state) for state in states]
 
 
 class StateMachine:
   """
-  Essa classe deve:
-  - Abstrair toda a lógica de máquinas de estado.
+  Abstração da lógica de máquinas de estado.
   """
   def __init__(self, session, state_type, parser_type):
+    # Inicializa os estados, o step e o modelo
     self.step = 0
     self.states = []
 
@@ -143,25 +173,35 @@ class StateMachine:
     )
 
   def start(self):
+    # Constrói todos os estados do modelo
     self.states = self.model.build_states()
 
   def next_step(self):
+    # Vai para o próximo estado do modelo, se houver
     if len(self.steps) > self.step + 1:
       self.step = self.step + 1
     return self.states[self.step]
 
 
 class Simulator:
+  """
+  Essa classe interage em alto nível com o capella e a SM
+  """
   def __init__(self, config):
+    # Carrega configurações
     self.state = None
     self.config = self._parse_config(config=config)
 
+    # Inicializa capella e máquina de estados
     self.model = CapellaModel()
     self.state_machine = self._load_state_machine()
 
   def run(self):
+    # Constrói a interface de comando
     self._build_command_interface()
-    self._command_trigger()
+
+    # Escuta comandos enviados
+    self._command_listener()
 
   def _build_command_interface(self):
     # TODO: create command board in capella
@@ -175,13 +215,14 @@ class Simulator:
     # Get capella session
     return self.model.get_system_engineering()
 
-  def _command_trigger(self):
+  def _command_listener(self):
     # TODO: be always waiting for some command
     command = None
     self.state = self.map_commands(command)()
     self.render_state()
 
   def _map_commands(self, command):
+    # Mapeia strings a comandos
     commands = {
       'start': self.state_machine.start,
       'next_step': self.state_machine.next_step
@@ -190,6 +231,7 @@ class Simulator:
 
   @staticmethod
   def _parse_config(config):
+    # Cria configurações válidas
     parsed_config = {
       'model_path': 'default',
       'state_type': 'sismic',
@@ -202,6 +244,7 @@ class Simulator:
     return parsed_config
 
   def _load_state_machine(self):
+    # Carrega a state machine
     session = self._get_session()
     state_type=self.config['state_type']
     parser_type=self.config['parser_type']
@@ -211,3 +254,11 @@ class Simulator:
       state_type=state_type,
       parser_type=parser_type
     )
+
+simulator = Simulator({
+  'model_path': 'default',
+  'state_type': 'sismic',
+  'parser_type': 'sismic'
+})
+
+simulator.run()
