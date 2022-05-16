@@ -1,5 +1,12 @@
+import yaml
+
 from abc import ABC
 from typing_extensions import Self
+
+from sismic.interpreter import Interpreter
+
+
+MAX_STEPS = 10
 
 
 class Parser(ABC):
@@ -19,7 +26,7 @@ class SM(ABC):
   """
     Abstração de uma máquina de estados
   """
-  def build_states(self):
+  def build_steps(self):
     # abstract
     pass
 
@@ -29,72 +36,89 @@ class SismicParser(Parser):
     Traduz sessões do capella para o modelo
     Traduz estados do modelo para o capella
   """
-  def session(self, session=None):
+
+  def _add_name(self, state):
+    return {
+      'name': state.get_name()
+    }
+
+  def _method_by_name(self, method, name: str):
+    return getattr(method, name)
+
+  def _build_state(self, owned_region):
+    states = []
+    for owned_state in owned_region.get_owned_states(): # Estado ou Modo
+        owned_state_obj = {
+            'incoming': [],
+            'outgoing': [],
+            'realized_states': [],
+            'realizing_states': []
+        }
+
+        for key in owned_state_obj:
+          method_to_call = self._method_by_name(owned_state, 'get_' + key)
+          for element in method_to_call():
+            owned_state_obj[key].append(self._add_name(element))
+
+        owned_state_obj['name'] = owned_state.get_name()
+        states.append(owned_state_obj)
+
+    return states
+
+  def _build_regions(self, state_machine):
+    regions = []
+    for owned_region in state_machine.get_owned_regions(): # Região da máquina
+        owned_region_obj = self._add_name(owned_region)
+
+        states = self._build_state(owned_region)
+
+        owned_region_obj['states'] = states
+        regions.append(owned_region_obj)
+
+    return regions
+
+  def _read_capella_state_machines(self, session):
     logical_architecture = session.get_logical_architecture()
     logical_system = logical_architecture.get_logical_system()
     owned_logical_components = logical_system.get_owned_logical_components() # Inside LC 1
 
-    states_machines = []
-
+    state_machines = []
     for owned_logical_component in owned_logical_components: # LC 1 Component
         for state_machine in owned_logical_component.get_owned_state_machines(): # Máquina de Estado
-            state_machine_obj = {
-                'name': state_machine.get_name(),
-            }
-            regions = []
-            for owned_region in state_machine.get_owned_regions(): # Região da máquina
-                print(owned_region.get_name())
-                owned_region_obj = {
-                    'name': owned_region.get_name()
-                }
-                
-                states = []
-                for owned_state in owned_region.get_owned_states(): # Estado ou Modo
-                    print(owned_state.get_name())
-                    owned_state_obj = {
-                        'name': owned_state.get_name(),
-                        'incoming': [],
-                        'outgoing': [],
-                        'realized_states': [],
-                        'realizing_states': []
-                    }
+            state_machine_obj = self._add_name(state_machine)
+            regions = self._build_regions(state_machine)
 
-                    for incoming in owned_state.get_incoming(): # Entradas
-                        print(incoming.get_name())
-                        owned_state_obj['incoming'].append({
-                            'name': incoming.get_name()
-                        })
-                    for outgoing in owned_state.get_outgoing(): # Saídas
-                        print(outgoing.get_name())
-                        owned_state_obj['outgoing'].append({
-                            'name': outgoing.get_name()
-                        })
-                    for realized_states in owned_state.get_realized_states(): # Estados Realizados
-                        print(realized_states.get_name())
-                        owned_state_obj['realized_states'].append({
-                            'name': realized_states.get_name()
-                        })
-                    for realizing_states in owned_state.get_realizing_states(): # Estados em Realização
-                        print(realizing_states.get_name())
-                        owned_state_obj['realizing_states'].append({
-                            'name': realizing_states.get_name()
-                        })
-
-                    states.append(owned_state_obj)
-
-                owned_region_obj['states'] = states
-                regions.append(owned_region_obj)
             state_machine_obj['regions'] = regions
-            states_machines.append(state_machine_obj)
+            state_machines.append(state_machine_obj)
 
-    return sismic.import_from_yaml(states_machines) # algo assim...
+    return state_machines
+
+  def _dict_to_yaml_str(self, dictonary):
+    return yaml.dump(dictonary)
+
+  def _capella_to_sismic_state_machines(self, state_machines):
+    # TODO: convert from capella to sismic
+    pass
+
+  def step(self, step=None):
+    for attribute in ['event', 'transitions', 'entered_states', 'exited_states', 'sent_events']:
+        print('{}: {}'.format(attribute, getattr(step, attribute)))
+
+  def session(self, session=None):
+    capella_sms = self._read_capella_state_machines(session)
+    sismic_sms = self._capella_to_sismic_state_machines(capella_sms)
+    simic_yaml_str = self._dict_to_yaml_text(sismic_sms)
+
+    return import_from_yaml(text=simic_yaml_str) # algo assim...
 
 
 class SismicSM(SM):
-  def build_states(self, session):
-    # TODO: build states in sismic
-    pass
-
+  def build_steps(self, session=None):
+    steps = []
+    interpreter = Interpreter(session)
+    for step in interpreter.execute(max_steps=MAX_STEPS):
+      steps.append(step)
+    return steps
 
 class Factory(ABC):
   """
@@ -150,12 +174,12 @@ class StateMachineModel:
     self.parser = ParserFactory(parser_type=parser_type)
     self.session = self.parser.session(session=session)
 
-  def build_states(self):
+  def build_steps(self):
     # Chama método de construção de estados
-    states = self.sm.build_states(session=self.session)
+    steps = self.sm.build_steps(session=self.session)
 
     # Traduz os estados para a linguagem do capella
-    return [self.parser.state(state) for state in states]
+    return [self.parser.step(step) for step in steps]
 
 
 class StateMachine:
@@ -175,7 +199,7 @@ class StateMachine:
 
   def start(self):
     # Constrói todos os estados do modelo
-    self.states = self.model.build_states()
+    self.states = self.model.build_steps()
 
   def next_step(self):
     # Vai para o próximo estado do modelo, se houver
@@ -212,15 +236,15 @@ class Simulator:
     # TODO: render state in capella
     pass
 
-  def _get_session(self):
-    # Get capella session
-    return self.model.get_system_engineering()
-
   def _command_listener(self):
     # TODO: be always waiting for some command
     command = None
     self.state = self.map_commands(command)()
     self.render_state()
+
+  def _get_session(self):
+    # Get capella session
+    return self.model.get_system_engineering()
 
   def _map_commands(self, command):
     # Mapeia strings a comandos
