@@ -208,6 +208,28 @@ class StateMachine:
     return self.states[self.step]
 
 
+class CapellaModelAPI:
+  def __init__(self, state_machine):
+    self.model = CapellaModel()
+    self.state_machine = state_machine
+
+  def build_command_interface(self):
+    # TODO: create command board in capella
+    pass
+
+  def listen(self):
+    # TODO: be always waiting for some command
+    pass
+
+  def render_state(self, state=None):
+    # TODO: render state in capella
+    pass
+
+  def read_session(self):
+    # Read capella session
+    return self.model.get_system_engineering()
+
+
 class Simulator:
   """
   Essa classe interage em alto nível com o capella e a SM
@@ -218,7 +240,6 @@ class Simulator:
     self.config = self._parse_config(config=config)
 
     # Inicializa capella e máquina de estados
-    self.model = CapellaModel()
     self.state_machine = self._load_state_machine()
 
   def run(self):
@@ -226,25 +247,22 @@ class Simulator:
     self._build_command_interface()
 
     # Escuta comandos enviados
-    self._command_listener()
+    while True:
+      self._command_listener()
 
   def _build_command_interface(self):
-    # TODO: create command board in capella
-    pass
-
-  def _render_state(self):
-    # TODO: render state in capella
-    pass
+    self.capella.build_command_interface()
 
   def _command_listener(self):
-    # TODO: be always waiting for some command
-    command = None
-    self.state = self.map_commands(command)()
-    self.render_state()
+    command = self.capella.listen() # be awaiting for a new command
+    self._command_to_state(command)()
+    self._render_state()
 
-  def _get_session(self):
-    # Get capella session
-    return self.model.get_system_engineering()
+  def _command_to_state(self, command):
+    self.state = self._map_commands(command)
+
+  def _render_state(self):
+    self.capella.render_state(state=self.state)
 
   def _map_commands(self, command):
     # Mapeia strings a comandos
@@ -253,6 +271,21 @@ class Simulator:
       'next_step': self.state_machine.next_step
     }
     return commands[command]
+
+  def _get_session(self):
+    return self.capella.read_session()
+
+  def _load_state_machine(self):
+    # Carrega a state machine
+    session = self._get_session()
+    state_type=self.config['state_type']
+    parser_type=self.config['parser_type']
+
+    return StateMachine(
+      session=session,
+      state_type=state_type,
+      parser_type=parser_type
+    )
 
   @staticmethod
   def _parse_config(config):
@@ -268,17 +301,6 @@ class Simulator:
 
     return parsed_config
 
-  def _load_state_machine(self):
-    # Carrega a state machine
-    session = self._get_session()
-    state_type=self.config['state_type']
-    parser_type=self.config['parser_type']
-
-    return StateMachine(
-      session=session,
-      state_type=state_type,
-      parser_type=parser_type
-    )
 
 simulator = Simulator({
   'model_path': 'default',
