@@ -119,7 +119,11 @@ interpreter.execute_once()  # Process "clack"
 Sismic runs synchronously by default, meaning that ```execute_once()``` calls are blocking operations. Thus, the simulation cannot proceed until all events are processed by calling the method in a loop or in another thread.
 Sismic can alternatively be executed asynchronously using ```AsyncRunner```, that provides basic support for continuous async execution of statecharts.
 
-
+## To-do
+- Continue development of the capella state machine to YAML converter (must cover all relations between State Machines - this can be tested by converting to YAML, generating a graphical view with PlantUML and comparing both diagrams).
+- Continue development of the Simulator class (essentially a wrapper around Sismic, but must communicate with Capella somehow)
+- Check simulation visualization methods for Capella: graphical interfaces, mainly.
+- Check validation/model checking techniques (can simulation logs/outputs from Sismic be used to validate the architecture automagically?)
 
 
 
