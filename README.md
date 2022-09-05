@@ -121,10 +121,6 @@ Sismic can alternatively be executed asynchronously using ```AsyncRunner```, tha
 
 ## To-do
 
-- [ ] https://github.com/CentroEspacialITA/capella-sim/issues/1
-- [ ] #2
-- #2
-
 - Continue development of the capella state machine to YAML converter (must cover all relations between State Machines - this can be tested by converting to YAML, generating a graphical view with PlantUML and comparing both diagrams).
 - Continue development of the Simulator class (essentially a wrapper around Sismic, but must communicate with Capella somehow)
 - Check simulation visualization methods for Capella: graphical interfaces, mainly.
