@@ -1,6 +1,5 @@
-import os
-
 from pytest_unordered import unordered
+
 from sismic.io import import_from_yaml
 
 
@@ -10,7 +9,7 @@ def test_simulator_config(simulator):
 
 
 def test_sessions(simulator):
-    mock_statechart = import_from_yaml(filepath=os.path.dirname(__file__) + '/mocks/mock.yaml')
+    mock_statechart = import_from_yaml(filepath='tests/mocks/mock.yaml')
 
     assert len(simulator.state_machine.model.sessions) == 6
 
