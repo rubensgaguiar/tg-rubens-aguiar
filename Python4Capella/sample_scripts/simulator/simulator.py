@@ -39,15 +39,17 @@ class Simulator:
                 return
 
     def _build_command_interface(self):
-        self.capella.build_command_interface()
+        sm_buttons = [state['name'] for state in self.state_machine.states]
+        self.capella.build_command_interface(sm_buttons)
 
     def _command_handler(self):
         """
             Escuta e executa comandos.
         """
         command = self.capella.listen()  # be awaiting for a new command
-        self._command_to_state(command)
-        self._render_states()
+        if command:
+            self._command_to_state(command)
+            self._render_states()
 
     def _command_to_state(self, command):
         self.states = self._map_commands(command)()
