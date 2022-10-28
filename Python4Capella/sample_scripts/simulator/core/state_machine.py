@@ -42,7 +42,6 @@ class SM:
     def __init__(self, session=None, state_type=None, parser_type=None):
         # Inicializa os estados, o step e o modelo
         self.step = -1
-        self.states = None
 
         self.model = StateMachineModel(
             session=session,
@@ -50,10 +49,9 @@ class SM:
             parser_type=parser_type
         )
 
-    def next_step(self):
-        if self.states == None:
-            self.start()
+        self.states = self.model.build_steps()
 
+    def next_step(self):
         # Vai para o próximo estado do modelo, se houver
         self.step = self.step + 1
 
@@ -81,10 +79,6 @@ class SM:
             self.step = self.step - 1
 
         return [self.get_step(steps) for steps in self.states]
-
-    def start(self):
-        # Constrói todos os estados do modelo
-        self.states = self.model.build_steps()
 
     def automatic(self):
         if self.states == None:

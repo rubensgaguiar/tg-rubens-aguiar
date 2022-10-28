@@ -7,23 +7,25 @@ from plantweb.render import render
 
 
 class CommandInterface:
-    def __init__(self):
+    def __init__(self, buttons):
         layout = [
             [sg.Text("State Machine Simulator")],
-            [sg.Image(size=(300, 300), key='-IMAGE-')],
-            [sg.Button("NEXT")],
-            [sg.Button("PREVIOUS")],
-            [sg.Button("FINALIZE")]
+            [sg.Image(key='-IMAGE-' + button) for button in buttons],
+            [sg.Button(button) for button in buttons],
+            [sg.Button("NEXT"), sg.Button("PREVIOUS"), sg.Button("FINALIZE")],
         ]
-        self.window = sg.Window("Demo", layout, location=(50, 50))
+        self.window = sg.Window("Simulator", layout, location=(50, 50))
 
 
 class CapellaModelAPI:
     def __init__(self, model):
         self.model = model
         self.command_interface = None
+        self.images = {}
+        self.buttons = []
+        self.button = None
 
-    def build_command_interface(self):
+    def build_command_interface(self, buttons):
         """
             Constrói no capella uma interface de comando
             para que o usuário gerencie os steps da simulação.
@@ -32,8 +34,11 @@ class CapellaModelAPI:
             cada step da simulação de 1 em 1 segundo.
         """
 
-        # TODO: create command board in capella
-        self.command_interface = CommandInterface()
+        self.buttons = buttons
+        if len(buttons) > 0:
+            self.button = buttons[0]
+
+        self.command_interface = CommandInterface(buttons)
 
     def listen(self):
         """
@@ -45,6 +50,12 @@ class CapellaModelAPI:
 
         if self.command_interface:
             event, _ = self.command_interface.window.read()
+
+            if event in self.buttons:
+                self.button = event
+                for key in self.buttons:
+                    self.command_interface.window['-IMAGE-' + key].update(visible=key == self.button)
+                return None
 
             if event == "NEXT":
                 return 'next_step'
@@ -59,7 +70,6 @@ class CapellaModelAPI:
 
     def render_states(self, states=None):
         # TODO: render state in capella
-        images = []
         for state in states:
             step = state['step']
             name = state['name']
@@ -85,11 +95,11 @@ class CapellaModelAPI:
                 )
 
                 im = Image.open(io.BytesIO(outfile[0]))
-                images.append(im)
+                im.thumbnail((1024, 728), Image.Resampling.LANCZOS)
+                self.images[name] = ImageTk.PhotoImage(image=im)
 
-            new_im = self._combine_imgs(images)
-            tk_im = ImageTk.PhotoImage(image=new_im)
-            self.command_interface.window['-IMAGE-'].update(data=tk_im)
+            for key in self.images:
+                self.command_interface.window['-IMAGE-' + key].update(data=self.images[key], visible= key == self.button)
 
             # TODO: Otimizar a geração de imagens, possíveis soluções:
             #       1. Salvar na memória imagens geradas para não ficar gerando novamente caso o usuário clique em voltar
@@ -103,29 +113,6 @@ class CapellaModelAPI:
         # Read capella session
         return self.model.get_system_engineering()
 
-    def _combine_imgs(self, images):
-        widths, heights = zip(*(i.size for i in images))
-
-        horizontal, width, height = self._find_aspect(widths, heights)
-
-        new_im = Image.new('RGB', (width, height))
-
-        offset = 10
-
-        if horizontal:
-            for im in images:
-                new_im.paste(im, (offset, 0))
-                offset += im.size[0]
-        else:
-            for im in images:
-                new_im.paste(im, (0, offset))
-                offset += im.size[1]
-
-        new_im.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
-
-        return new_im
-
-
     def _change_plantuml_color(self, plantuml, state, color):
         pattern = r'"{state}"(.*){{'.format(state=state)
 
@@ -134,17 +121,3 @@ class CapellaModelAPI:
             tmp_plantuml = plantuml[:end] + color + " " + plantuml[end:]
 
         return tmp_plantuml
-
-    def _find_aspect(self, widths, heights):
-        total_height = sum(heights)
-        max_width = max(widths)
-
-        total_width = sum(widths)
-        max_height = max(heights)
-
-        is_horizontal = abs(max_width / total_height - 16/9) > abs(total_width / max_height - 16/9)
-
-        if is_horizontal:
-            return True, total_width, max_height
-        else:
-            return False, max_width, total_height
