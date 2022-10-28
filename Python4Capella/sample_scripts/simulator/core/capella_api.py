@@ -70,6 +70,7 @@ class CapellaModelAPI:
 
     def render_states(self, states=None):
         # TODO: render state in capella
+        images = []
         for state in states:
             step = state['step']
             name = state['name']
@@ -112,6 +113,7 @@ class CapellaModelAPI:
     def read_session(self):
         # Read capella session
         return self.model.get_system_engineering()
+
 
     def _change_plantuml_color(self, plantuml, state, color):
         pattern = r'"{state}"(.*){{'.format(state=state)
