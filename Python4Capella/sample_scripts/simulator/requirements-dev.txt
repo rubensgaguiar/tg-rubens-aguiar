@@ -1,0 +1,4 @@
+sismic==1.6.3
+pytest==7.1.1
+Pillow==9.2.0
+plantweb==1.2.1

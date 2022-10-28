@@ -29,7 +29,8 @@ class StateMachineModel:
         # Traduz os estados para a linguagem do capella
         return [{
             'name': steps['name'],
-            'steps': [self.parser.step(step) for step in steps['steps']]
+            'steps': [self.parser.step(step) for step in steps['steps']],
+            'plantuml': steps['plantuml']
         } for steps in steps_sms]
 
 
@@ -63,7 +64,11 @@ class SM:
         if stepslen <= self.step and stepslen > 0:
             self.step = stepslen - 1
 
-        return steps['steps'][self.step], steps['name']
+        return {
+            'step': steps['steps'][self.step],
+            'name': steps['name'],
+            'plantuml': steps['plantuml']
+        }
 
     def previous_step(self):
         # Vai para o próximo estado do modelo, se houver
