@@ -1,0 +1,35 @@
+statechart:
+  name: sm
+  root state:
+    name: root
+    parallel states:
+    - initial: smownedregion2ownedstate1
+      name: smownedregion2
+      states:
+      - name: smownedregion2ownedstate2transition4
+      - name: smownedregion2ownedstate2transition3
+      - name: smownedregion2ownedstate1transition4
+      - name: smownedregion2ownedstate1transition3
+      - name: smownedregion2ownedstate2
+        transitions:
+        - target: smownedregion2ownedstate2transition3
+        - target: smownedregion2ownedstate2transition4
+      - name: smownedregion2ownedstate1
+        transitions:
+        - target: smownedregion2ownedstate1transition3
+        - target: smownedregion2ownedstate1transition4
+    - initial: smownedregion1ownedstate1
+      name: smownedregion1
+      states:
+      - name: smownedregion1ownedstate2transition4
+      - name: smownedregion1ownedstate2transition3
+      - name: smownedregion1ownedstate1transition4
+      - name: smownedregion1ownedstate1transition3
+      - name: smownedregion1ownedstate2
+        transitions:
+        - target: smownedregion1ownedstate2transition3
+        - target: smownedregion1ownedstate2transition4
+      - name: smownedregion1ownedstate1
+        transitions:
+        - target: smownedregion1ownedstate1transition3
+        - target: smownedregion1ownedstate1transition4

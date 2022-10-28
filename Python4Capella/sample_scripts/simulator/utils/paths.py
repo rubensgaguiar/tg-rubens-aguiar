@@ -1,0 +1,1 @@
+# TODO: colocar todos os paths do tipo "workspace://..." aqui
