@@ -54,7 +54,8 @@ class CapellaModelAPI:
             if event in self.buttons:
                 self.button = event
                 for key in self.buttons:
-                    self.command_interface.window['-IMAGE-' + key].update(visible=key == self.button)
+                    self.command_interface.window['-IMAGE-' +
+                                                  key].update(visible=key == self.button)
                 return None
 
             if event == "NEXT":
@@ -70,7 +71,6 @@ class CapellaModelAPI:
 
     def render_states(self, states=None):
         # TODO: render state in capella
-        images = []
         for state in states:
             step = state['step']
             name = state['name']
@@ -86,34 +86,37 @@ class CapellaModelAPI:
             for entered in step.entered_states:
                 tmp_plantuml = self._change_plantuml_color(plantuml, entered, "#FFEE75")
 
-                outfile = render(
-                    tmp_plantuml,
-                    engine='plantuml',
-                    format='png',
-                    cacheopts={
-                        'use_cache': False
-                    }
-                )
+            for exited in step.exited_states:
+                tmp_plantuml = self._change_plantuml_color(tmp_plantuml, exited, "#84B1E4")
 
-                im = Image.open(io.BytesIO(outfile[0]))
-                im.thumbnail((1024, 728), Image.Resampling.LANCZOS)
-                self.images[name] = ImageTk.PhotoImage(image=im)
+            print('plantuml', tmp_plantuml)
+
+            outfile = render(
+                tmp_plantuml,
+                engine='plantuml',
+                format='png',
+                cacheopts={
+                    'use_cache': False
+                }
+            )
+
+            im = Image.open(io.BytesIO(outfile[0]))
+            im.thumbnail((1024, 728), Image.Resampling.LANCZOS)
+            self.images[name] = ImageTk.PhotoImage(image=im)
 
             for key in self.images:
-                self.command_interface.window['-IMAGE-' + key].update(data=self.images[key], visible= key == self.button)
+                self.command_interface.window['-IMAGE-' + key].update(
+                    data=self.images[key], visible=key == self.button)
 
             # TODO: Otimizar a geração de imagens, possíveis soluções:
             #       1. Salvar na memória imagens geradas para não ficar gerando novamente caso o usuário clique em voltar
-            #       2. Gerar imagens antecipadamente, quando o usuário clicar em next, 
+            #       2. Gerar imagens antecipadamente, quando o usuário clicar em next,
             #          printar a próxima imagem que já estava gerada e depois de printar,
             #          já carregar a próxima imagem.
-
-
 
     def read_session(self):
         # Read capella session
         return self.model.get_system_engineering()
-
 
     def _change_plantuml_color(self, plantuml, state, color):
         pattern = r'"{state}"(.*){{'.format(state=state)
